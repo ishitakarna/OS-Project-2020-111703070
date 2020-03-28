@@ -1,0 +1,16 @@
+https://github.com/google/nsync
+
+http://heather.cs.ucdavis.edu/~matloff/158/PLN/RWLock.c //read write lock using pthread
+https://computing.llnl.gov/tutorials/pthreads/#ConditionVariables //pthread condition variables
+
+https://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Atomic-Builtins.html //test and set 
+
+http://www.cs.utexas.edu/~pingali/CS378/2015sp/lectures/Spinlocks%20and%20Read-Write%20Locks.htm //assembly code implementation
+https://github.com/cyfdecyf/spinlock //spinlock
+
+
+*Extra*
+http://greenteapress.com/thinkos/html/thinkos012.html //semaphore in c for unix
+https://en.cppreference.com/w/c/thread //same as pthread
+https://docs.oracle.com/cd/E19455-01/806-0630/6j9vkb8cs/index.html //condition variables in c
+https://web.stanford.edu/~ouster/cgi-bin/cs140-spring14/lecture.php?topic=locks //basic implementation

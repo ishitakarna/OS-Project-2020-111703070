@@ -1,25 +1,44 @@
 #include "func.h"
+#include <stdio.h>
+#include <linux/futex.h>
+#include <syscall.h>
 
 /*---Spinlock---*/
+void spin_init(spinlock_t *s) {
+    s->val = 0;
+}
+
 void spin_lock(spinlock_t *s) {
-    while(test_and_set(s) != 0);
+    while(__sync_lock_test_and_set(&(s->val), 1));
 }
 
 void spin_unlock (spinlock_t *s) {
-    s->x = 0;
+    s->val = 0;
 }
 
 /*---Semaphore---*/
-void initsem(semaphore *sem, int val) {
-    sem->x = val;
-    sem->sl.x = 0; 
+void sem_init(semaphore_t *sem, int initval) {
+    sem->val = initval;
+    sem->sl.val = 0; 
 }
 
-void P(semaphore *sem); //acquire semaphore 
-void V(semaphore *sem); //release semaphore 
+void sem_acquire(semaphore_t *sem, int threadId) {
+    spin_lock(&sem->sl);
+    while(sem->val <= 0) {
+        printf("spinning thread %d sem %d\n", threadId, sem->val);
+    }
+    sem->val--;
+    spin_unlock(&sem->sl);
+} 
+
+void sem_release(semaphore_t *sem) {
+    spin_lock(&sem->sl);
+    sem->val++;
+    spin_unlock(&sem->sl);
+} 
 
 /*---Functionality---*/
-void wait(condition *c, spinlock_t *s) {
+/*void wait(condition *c, spinlock_t *s) {
     spin_lock(&c->listLock);
     //add self to linked list 
     spin_unlock(&c->listLock);
@@ -44,10 +63,10 @@ void do_broadcast(condition *c) { //wake up all threads
         //make it runnable
     //}
     spin_unlock(&c->listLock);
-}
+}*/
 
 /*---Read Write Locks ---*/
-void lockShared(rwlock *r) {
+/*void lockShared(rwlock *r) {
     spin_lock(&r->sl);
     r->nPendingReads++;
     if(r->nPendingWrites > 0)
@@ -90,4 +109,4 @@ void unlockExclusive(rwlock *r) {
         do_broadcast(&r->canRead);
     else
         do_signal(&r->canWrite); 
-}
+}*/

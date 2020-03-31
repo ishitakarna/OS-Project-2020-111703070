@@ -12,18 +12,20 @@ typedef struct mutex_t {
     semaphore_t sem;
 }mutex_t;
 
-/*typedef struct condition {
-    spinlock_t listLock;
-}condition;
-
 typedef struct rwlock {
     int nActive; //number of active readers, -1 if writer is active
     int nPendingReads;
     int nPendingWrites;
     spinlock_t sl;
-    condition canRead;
-    condition canWrite;
-}rwlock;*/
+    /*condition canRead;
+    condition canWrite;*/
+}rwlock;
+
+/*typedef struct condition {
+    spinlock_t listLock;
+}condition;
+
+*/
 
 /*---Functions---*/
 
@@ -47,15 +49,15 @@ void mutex_init(mutex_t *m);
 void mutex_lock(mutex_t *m);
 void mutex_unlock(mutex_t *m);
 
-//Functionality
-/*void wait(condition *c, spinlock_t *s);
-void do_signal(condition *c); //wake up one thread
-void do_broadcast(condition *c); //wake up all threads 
-
 //Read write locks
 void lockShared(rwlock *r);
 void unlockShared(rwlock *r);
 void lockExclusive(rwlock *r);
 void unlockExclusive(rwlock *r);
+
+//Functionality
+void wait(int type, spinlock_t *s);
+//void do_signal(int type); //wake up one thread
+//void do_broadcast(int type); //wake up all threads 
 //void upgrade(rwlock *r);
-//void downgrade(rwlock *r);*/
+//void downgrade(rwlock *r);

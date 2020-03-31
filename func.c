@@ -3,8 +3,10 @@
 #include <linux/futex.h>
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <limits.h>
 
 int futex_addr;
+int futex_read_addr, futex_write_addr;
 
 /*---Spinlock---*/
 void spin_init(spinlock_t *s) {
@@ -70,41 +72,51 @@ void mutex_unlock(mutex_t *m) {
 }
 
 /*---Functionality---*/
-/*void wait(condition *c, spinlock_t *s) {
-    spin_lock(&c->listLock);
+void wait(int type, spinlock_t *s) {
+    /*spin_lock(&c->listLock);
     //add self to linked list 
-    spin_unlock(&c->listLock);
-    spin_unlock(s); //release spinlock before blocking 
-    //perform context switch 
+    spin_unlock(&c->listLock);*/
+    if(type == 0) {
+        futex_read_addr = 0;
+        spin_unlock(s); //release spinlock before blocking 
+        futex_wait(&futex_read_addr, 0);
+    }
+    else {
+        futex_write_addr = 0;
+        spin_unlock(s); //release spinlock before blocking 
+        futex_wait(&futex_write_addr, 0);
+    }
     spin_lock(s);
     return;
 }
 
-void do_signal(condition *c) { //wake up one thread
+/*void do_signal(int type) { //wake up one thread
     spin_lock(&c->listLock);
     //remove one thread from linked list if non empty 
     spin_unlock(&c->listLock);
-    //thread removed -> make it runnable 
+    //thread removed -> make it runnable
+
     return;
 }
 
-void do_broadcast(condition *c) { //wake up all threads 
+void do_broadcast(int type) { //wake up all threads 
     spin_lock(&c->listLock);
     //while(linked list is non empty) {
         //remove a thread from linked list 
         //make it runnable
     //}
     spin_unlock(&c->listLock);
-}*/
+}
+*/
 
 /*---Read Write Locks ---*/
-/*void lockShared(rwlock *r) {
+void lockShared(rwlock *r) {
     spin_lock(&r->sl);
     r->nPendingReads++;
-    if(r->nPendingWrites > 0)
-        wait(&r->canRead, &r->sl); //no starving writers 
+    if(r->nPendingWrites > 0) 
+        wait(0, &r->sl); //no starving writers 
     while(r->nActive < 0) //exclusive lock present
-        wait(&r->canRead, &r->sl); 
+        wait(0, &r->sl); 
     r->nActive++;
     r->nPendingReads--;
     spin_unlock(&r->sl);
@@ -115,7 +127,8 @@ void unlockShared(rwlock *r) {
     r->nActive--;
     if(r->nActive == 0) { //no other readers active
         spin_unlock(&r->sl);
-        do_signal(&r->canWrite);
+        //do_signal(); 
+        futex_wake(&futex_write_addr, 1); //wake a single writer 
     }
     else 
         spin_unlock(&r->sl);
@@ -124,8 +137,8 @@ void unlockShared(rwlock *r) {
 void lockExclusive(rwlock *r) {
     spin_lock(&r->sl);
     r->nPendingWrites++;
-    while(r->nActive)
-        wait(&r->canWrite, &r->sl);
+    while(r->nActive) //writer waiting for readers
+        wait(1, &r->sl);
     r->nPendingWrites--;
     r->nActive = -1;
     spin_unlock(&r->sl);
@@ -135,10 +148,18 @@ void unlockExclusive(rwlock *r) {
     int wakeReaders;
     spin_lock(&r->sl);
     r->nActive = 0;
-    wakeReaders = (r->nPendingReads != 0);
-    spin_unlock(&r->sl);
-    if(wakeReaders)
-        do_broadcast(&r->canRead);
+    if(r->nPendingReads != 0)
+        wakeReaders = 1;
     else
-        do_signal(&r->canWrite); 
-}*/
+        wakeReaders = 0;
+
+    spin_unlock(&r->sl);
+    if(wakeReaders) {
+        //do_broadcast(&r->canRead); //wake all readers
+        futex_wake(&futex_read_addr, INT_MAX);
+    }
+    else {
+        //do_signal(&r->canWrite); //wake single writer
+        futex_wake(&futex_write_addr, 1); 
+    }
+}

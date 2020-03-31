@@ -25,3 +25,29 @@ https://eli.thegreenplace.net/2018/basics-of-futexes/
 https://stackoverflow.com/questions/24488564/how-futex-works-in-this-case
 https://stackoverflow.com/questions/7006061/mutex-and-condition-variable-implementation-using-futex
 https://opensourceforu.com/2013/12/things-know-futexes/
+
+/*Read write locks*/
+https://code.woboq.org/userspace/glibc/nptl/pthread_rwlock_common.c.html#__pthread_rwlock_wrlock_full //pthread rw lock
+http://heather.cs.ucdavis.edu/~matloff/158/PLN/RWLock.c //pthread
+https://gist.github.com/smokku/653c469d695d60be4fe8170630ba8205 //futex
+https://stackoverflow.com/questions/3964776/futex-based-4-byte-single-writer-multiple-readers-lock
+
+//Futex man page
+This futex() operation will block if and
+only if the lock is still acquired (i.e., the value in the futex word
+still matches the "acquired state").  When releasing the lock, a
+thread has to first reset the lock state to not acquired and then
+execute a futex operation that wakes threads blocked on the lock flag
+used as a futex word (this can be further optimized to avoid
+unnecessary wake-ups). 
+
+A futex is identified by a piece of memory which can be shared
+between processes or threads.
+
+In its bare form, a futex is an aligned integer which is touched only
+by atomic assembler instructions.  This integer is four bytes long on
+all platforms.  Processes can share this integer using mmap(2), via
+shared memory segments, or because they share memory space, in which
+case the application is commonly called multithreaded.
+
+https://www.remlab.net/op/futex-condvar.shtml

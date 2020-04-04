@@ -17,15 +17,9 @@ typedef struct rwlock {
     int nPendingReads;
     int nPendingWrites;
     spinlock_t sl;
-    /*condition canRead;
-    condition canWrite;*/
+    int futex_read_addr;
+    int futex_write_addr;
 }rwlock;
-
-/*typedef struct condition {
-    spinlock_t listLock;
-}condition;
-
-*/
 
 /*---Functions---*/
 
@@ -50,13 +44,14 @@ void mutex_lock(mutex_t *m);
 void mutex_unlock(mutex_t *m);
 
 //Read write locks
+void initRwLock(rwlock *r);
 void lockShared(rwlock *r);
 void unlockShared(rwlock *r);
 void lockExclusive(rwlock *r);
 void unlockExclusive(rwlock *r);
 
 //Functionality
-void wait(int type, spinlock_t *s);
+void wait(int type, spinlock_t *s, rwlock *r);
 //void do_signal(int type); //wake up one thread
 //void do_broadcast(int type); //wake up all threads 
 //void upgrade(rwlock *r);

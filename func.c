@@ -6,7 +6,6 @@
 #include <limits.h>
 
 int futex_addr;
-int futex_read_addr, futex_write_addr;
 
 /*---Spinlock---*/
 void spin_init(spinlock_t *s) {
@@ -72,19 +71,16 @@ void mutex_unlock(mutex_t *m) {
 }
 
 /*---Functionality---*/
-void wait(int type, spinlock_t *s) {
-    /*spin_lock(&c->listLock);
-    //add self to linked list 
-    spin_unlock(&c->listLock);*/
+void wait(int type, spinlock_t *s, rwlock *r) {
     if(type == 0) {
-        futex_read_addr = 0;
+        r->futex_read_addr = 0;
         spin_unlock(s); //release spinlock before blocking 
-        futex_wait(&futex_read_addr, 0);
+        futex_wait(&r->futex_read_addr, 0);
     }
     else {
-        futex_write_addr = 0;
+        r->futex_write_addr = 0;
         spin_unlock(s); //release spinlock before blocking 
-        futex_wait(&futex_write_addr, 0);
+        futex_wait(&r->futex_write_addr, 0);
     }
     spin_lock(s);
     return;
@@ -110,13 +106,20 @@ void do_broadcast(int type) { //wake up all threads
 */
 
 /*---Read Write Locks ---*/
+void initRwLock(rwlock *r) {
+    r->nActive = 0;
+    r->nPendingReads = 0;
+    r->nPendingWrites = 0;
+    r->sl.val = 0;
+}
+
 void lockShared(rwlock *r) {
     spin_lock(&r->sl);
     r->nPendingReads++;
     if(r->nPendingWrites > 0) 
-        wait(0, &r->sl); //no starving writers 
+        wait(0, &r->sl, r); //no starving writers 
     while(r->nActive < 0) //exclusive lock present
-        wait(0, &r->sl); 
+        wait(0, &r->sl, r); 
     r->nActive++;
     r->nPendingReads--;
     spin_unlock(&r->sl);
@@ -128,7 +131,7 @@ void unlockShared(rwlock *r) {
     if(r->nActive == 0) { //no other readers active
         spin_unlock(&r->sl);
         //do_signal(); 
-        futex_wake(&futex_write_addr, 1); //wake a single writer 
+        futex_wake(&r->futex_write_addr, 1); //wake a single writer 
     }
     else 
         spin_unlock(&r->sl);
@@ -138,7 +141,7 @@ void lockExclusive(rwlock *r) {
     spin_lock(&r->sl);
     r->nPendingWrites++;
     while(r->nActive) //writer waiting for readers
-        wait(1, &r->sl);
+        wait(1, &r->sl, r);
     r->nPendingWrites--;
     r->nActive = -1;
     spin_unlock(&r->sl);
@@ -153,13 +156,14 @@ void unlockExclusive(rwlock *r) {
     else
         wakeReaders = 0;
 
-    spin_unlock(&r->sl);
     if(wakeReaders) {
         //do_broadcast(&r->canRead); //wake all readers
-        futex_wake(&futex_read_addr, INT_MAX);
+        spin_unlock(&r->sl);
+        futex_wake(&r->futex_read_addr, INT_MAX);
     }
     else {
         //do_signal(&r->canWrite); //wake single writer
-        futex_wake(&futex_write_addr, 1); 
+        spin_unlock(&r->sl);
+        futex_wake(&r->futex_write_addr, 1); 
     }
 }

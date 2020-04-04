@@ -19,3 +19,21 @@
 
 ##  Synchronization Library
 **Implementing a C library with various synchronization primitives namely spinlocks, semaphores, mutexes and read-write locks.**
+
+#### Spinlock
+* Data Type : spinlock_t
+* Functions : Init, Lock, Unlock 
+
+#### Mutex
+* Data Type : mutex_t
+* Functions : Init, Lock, Unlock
+
+#### Semaphore
+* Data Type : semaphore_t
+* Functions : Init, Acquire, Release
+
+#### Read Write locks
+* Data Type : rwlock
+* Functions : Init, LockShared, UnlockShared, LockExclusive, UnlockExclusive
+
+

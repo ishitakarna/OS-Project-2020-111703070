@@ -206,7 +206,7 @@ void testCountingSemaphore() {
 }
 
 /* --- TESTING READ WRITE LOCKS --- */
-#define NO_OF_THREADS 11
+#define NO_OF_THREADS 10
 
 void *writeData(void *i) {
     int a = *((int *) i);

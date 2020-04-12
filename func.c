@@ -5,8 +5,6 @@
 #include <sys/syscall.h>
 #include <limits.h>
 
-int futex_addr;
-
 /*---Spinlock---*/
 void spin_init(spinlock_t *s) {
     s->val = 0;
@@ -35,9 +33,9 @@ void sem_init(semaphore_t *sem, int initval) {
 }
 
 void block(semaphore_t *sem) {
-    futex_addr = 0;
+    sem->futex_addr = 0;
     spin_unlock(&sem->sl);
-    futex_wait(&futex_addr, 0);
+    futex_wait(&(sem->futex_addr), 0);
 }
 
 void sem_acquire(semaphore_t *sem) {
@@ -53,7 +51,7 @@ void sem_acquire(semaphore_t *sem) {
 void sem_release(semaphore_t *sem) {
     spin_lock(&sem->sl);
     sem->val++;
-    futex_wake(&futex_addr, 1);
+    futex_wake(&(sem->futex_addr), 1);
     spin_unlock(&sem->sl);
 } 
 
@@ -85,25 +83,6 @@ void wait(int type, spinlock_t *s, rwlock *r) {
     spin_lock(s);
     return;
 }
-
-/*void do_signal(int type) { //wake up one thread
-    spin_lock(&c->listLock);
-    //remove one thread from linked list if non empty 
-    spin_unlock(&c->listLock);
-    //thread removed -> make it runnable
-
-    return;
-}
-
-void do_broadcast(int type) { //wake up all threads 
-    spin_lock(&c->listLock);
-    //while(linked list is non empty) {
-        //remove a thread from linked list 
-        //make it runnable
-    //}
-    spin_unlock(&c->listLock);
-}
-*/
 
 /*---Read Write Locks ---*/
 void initRwLock(rwlock *r) {
@@ -157,12 +136,12 @@ void unlockExclusive(rwlock *r) {
         wakeReaders = 0;
 
     if(wakeReaders) {
-        //do_broadcast(&r->canRead); //wake all readers
+        //wake all readers
         spin_unlock(&r->sl);
         futex_wake(&r->futex_read_addr, INT_MAX);
     }
     else {
-        //do_signal(&r->canWrite); //wake single writer
+        //wake single writer
         spin_unlock(&r->sl);
         futex_wake(&r->futex_write_addr, 1); 
     }

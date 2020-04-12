@@ -6,6 +6,7 @@ typedef struct spinlock_t {
 typedef struct semaphore_t {
     int val;
     spinlock_t sl;
+    int futex_addr;
 }semaphore_t;
 
 typedef struct mutex_t {
@@ -52,7 +53,3 @@ void unlockExclusive(rwlock *r);
 
 //Functionality
 void wait(int type, spinlock_t *s, rwlock *r);
-//void do_signal(int type); //wake up one thread
-//void do_broadcast(int type); //wake up all threads 
-//void upgrade(rwlock *r);
-//void downgrade(rwlock *r);
